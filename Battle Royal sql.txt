@@ -1,0 +1,44 @@
+-- LOGIN MAP --
+IF (@ActionType = '112' AND @Value2 = '101107')
+BEGIN
+DECLARE @User varchar(30) = (SELECT CharName FROM PS_Agent.dbo.BattleRoyaleUsers WHERE CharName = @CharName)
+IF (@User IS NULL)
+BEGIN
+INSERT INTO PS_Agent.dbo.BattleRoyaleUsers VALUES (@CharName)
+DECLARE @UserCount int = (SELECT COUNT(*) FROM PS_Agent.dbo.BattleRoyaleUsers)
+DECLARE @Notice varchar(120) = @CharName + ' JOINS THE BATTLE ROYALE! THE NUMBER OF PARTICIPANTS:'+ CAST(@UserCount AS nvarchar(10))
+EXEC PS_Agent.dbo.Notice @Notice
+END
+END 
+
+IF (@ActionType = '104')
+BEGIN
+DECLARE @RowID int = (SELECT MIN(RowID) FROM PS_Agent.dbo.BattleRoyaleItems)
+WHILE @RowID IS NOT NULL
+BEGIN
+DECLARE @Type nvarchar(10) = (SELECT Type FROM PS_Agent.dbo.BattleRoyaleItems WHERE RowID = @RowID)
+DECLARE @TypeID nvarchar(10) = (SELECT TypeID FROM PS_Agent.dbo.BattleRoyaleItems WHERE RowID = @RowID)
+DECLARE @Quantity nvarchar(10) = '255'
+EXEC PS_Agent.dbo.DropItem @CharName,@Type,@TypeID,@Quantity
+SELECT @RowID = MIN(RowID) FROM PS_Agent.dbo.BattleRoyaleItems where RowID > @RowID
+END
+DELETE FROM PS_Agent.dbo.BattleRoyaleUsers WHERE CharName = @CharName
+SET @UserCount = (SELECT COUNT(*) FROM PS_Agent.dbo.BattleRoyaleUsers)
+SET @Notice = @CharName + ' KILLED BY '+ @Text1 + ' THE NUMBER OF PARTICIPANTS:' + CAST(@UserCount AS nvarchar(10))
+EXEC PS_Agent.dbo.Notice @Notice
+IF (@UserCount = 1)
+BEGIN
+SET @Notice = 'WINNER WINNER,CHICKEN DINNER!'
+EXEC PS_Agent.dbo.Notice @Notice
+DECLARE @WinnerUser nvarchar(30) = (SELECT TOP 1 CharName FROM PS_Agent.dbo.BattleRoyaleUsers)
+SET @Notice = 'CONGRATULATIONS! ' + @WinnerUser
+EXEC PS_Agent.dbo.Notice @Notice
+EXEC PS_Agent.dbo.SendItem @WinnerUser,@Type = '100',@TypeID='132',@Quantity='255'
+END
+END
+
+
+IF (@ActionType = '103')
+BEGIN
+EXEC PS_Agent.dbo.SendSkill @CharName,@SkillID='31',@SkillLevel='1'
+END
